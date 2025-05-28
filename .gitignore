@@ -1,0 +1,34 @@
+# === STM32CubeIDE build files ===
+/Debug/
+/Release/
+*.o
+*.d
+*.elf
+*.map
+*.bin
+*.hex
+*.list
+*.dep
+
+# === IDE configuration (facoltativo tenerli per team uniformi) ===
+.project
+.cproject
+.settings/
+.vscode/
+.metadata/
+
+# === CubeMX backup and auto-save ===
+*.ioc.backup
+*.ioc~*
+
+# === Log and temp ===
+*.log
+*.tmp
+*.bak
+*~
+*.swp
+*.swo
+
+# === System trash ===
+.DS_Store
+Thumbs.db
