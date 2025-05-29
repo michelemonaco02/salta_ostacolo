@@ -10,12 +10,6 @@
 *.list
 *.dep
 
-# === IDE configuration (facoltativo tenerli per team uniformi) ===
-.project
-.cproject
-.settings/
-.vscode/
-.metadata/
 
 # === CubeMX backup and auto-save ===
 *.ioc.backup

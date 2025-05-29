@@ -8,21 +8,33 @@
 #ifndef SRC_GAME_H_
 #define SRC_GAME_H_
 
+#define LCD_WIDTH 128
+#define LCD_HEIGHT 64
+#define OBS_MAX_LEN 10
+#define OBS_MIN_LEN 5
+
+#define INATTIVO 0
+#define IN_GIOCO 1
+#define OVER 2
 
 typedef struct{
-	float estremita_sup;
-	float lunghezza;
-	float coord_x;
+	int estremita_sup;
+	int estremita_inf;
+	int coord_x;
 }Ostacolo;
 
-typedef struct ListaOstacoli{
+typedef struct{
 	Ostacolo ost;
-	struct ListaOstacoli* next;
-}ListaOstacoli;
+	Ostacolo* next;
+}Nodo;
+
+typedef struct ListaOstacoli{
+	Nodo* head;
+};
 
 typedef struct{
-	float altezza_giocatore;
-	ListaOstacoli* lista_ostacoli;
+	int y_giocatore;
+	ListaOstacoli lista_ostacoli;
 	int stato;  //0 inattivo, 1 in gioco, 2 game over
 	float durata_corrente;
 }Game;

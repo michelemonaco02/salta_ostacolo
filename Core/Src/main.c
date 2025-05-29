@@ -18,6 +18,8 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include <stdbool.h>
+#include"game.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -48,6 +50,8 @@ TIM_HandleTypeDef htim6;
 
 PCD_HandleTypeDef hpcd_USB_FS;
 
+volatile bool start_requested = false;
+
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -65,6 +69,12 @@ static void MX_TIM6_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void HAL_GPIO_EXTI_Callback(GPIO_Pin){
+	//verifica che l'interruzione sia dal PA9
+	if (GPIO_Pin == GPIO_PIN_9) {
+	        start_requested = true;
+	    }
+}
 
 /* USER CODE END 0 */
 
@@ -102,6 +112,7 @@ int main(void)
   MX_USB_PCD_Init();
   MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
+  Game gioco;
 
   /* USER CODE END 2 */
 
@@ -110,6 +121,9 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+	  if (start_requested && gioco.stato != IN_GIOCO) {
+		  	             initGame(&gioco);
+	          }
 
     /* USER CODE BEGIN 3 */
   }
