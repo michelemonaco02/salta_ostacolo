@@ -126,6 +126,7 @@ int main(void)
 	          }
 
     /* USER CODE BEGIN 3 */
+	  while(gioco.stato != OVER);
   }
   /* USER CODE END 3 */
 }
