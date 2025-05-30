@@ -1,10 +1,3 @@
-/*
- * game.h
- *
- *  Created on: May 28, 2025
- *      Author: angio
- */
-
 #ifndef SRC_GAME_H_
 #define SRC_GAME_H_
 
@@ -17,34 +10,30 @@
 #define IN_GIOCO 1
 #define OVER 2
 
-typedef struct{
+typedef struct {
 	int estremita_sup;
 	int estremita_inf;
 	int coord_x;
-}Ostacolo;
+} Ostacolo;
 
-typedef struct{
+typedef struct Nodo {
 	Ostacolo ost;
-	Ostacolo* next;
-}Nodo;
+	struct Nodo* next;
+} Nodo;
 
-typedef struct ListaOstacoli{
+typedef struct {
 	Nodo* head;
-};
+} ListaOstacoli;
 
-typedef struct{
+typedef struct {
 	int y_giocatore;
 	ListaOstacoli lista_ostacoli;
 	int stato;  //0 inattivo, 1 in gioco, 2 game over
 	float durata_corrente;
-}Game;
+} Game;
 
 void initGame(Game* g);
-
-void updateGame(Game* g);
-
+void updateGame(Game* g,int new_y_giocatore);
 void endGame(Game* g);
-
-
 
 #endif /* SRC_GAME_H_ */

@@ -8,14 +8,18 @@
 #include "game.h"
 #include <stdlib.h>  // per malloc e free
 #include <stdio.h>   // per debug printf se serve
+#include <stdbool.h>
+
+#define TRUE 0
+#define FALSE 1
 
 
 void initGame(Game* g){
-	g->y_giocatore = LCD_HEIGTH / 2;
+	g->y_giocatore = LCD_HEIGHT / 2;
 	//generiamo randomicamente l'altezza
 	int lunghezza = rand_in_range(OBS_MIN_LEN,OBS_MAX_LEN);
 	//generiamo randomicamente l'estremita superiore dell'ostacolo
-	int es_sup = rand_in_range(altezza,LCD_HEIGHT-1);
+	int es_sup = rand_in_range(lunghezza,LCD_HEIGHT-1);
 	int es_inf = es_sup - lunghezza;
 	addOstacolo(g,es_sup,es_inf);
 	g->stato = IN_GIOCO;
@@ -55,7 +59,7 @@ void updateGame(Game* g, int new_y_giocatore) {
 
     // Controllo se devo aggiungere un nuovo ostacolo
     // (qui chiamiamo la funzione placeholder check_aggiungi_ostacolo che ritorna int)
-    if (check_aggiungi_ostacolo(g)) {
+    if (check_aggiungi_ostacolo(g) == TRUE) {
         // genero valori random per il nuovo ostacolo
         int lunghezza = rand_in_range(OBS_MIN_LEN, OBS_MAX_LEN);
         int es_sup = rand_in_range(0, LCD_HEIGHT - lunghezza - 1);
@@ -127,4 +131,7 @@ void removeOstacolo(Game* g) {
     g->lista_ostacoli.head = temp->next;
     free(temp);
 }
-void check_aggiungi_ostacolo(Game* g);
+
+int check_aggiungi_ostacolo(Game* g){
+	return 0;
+}

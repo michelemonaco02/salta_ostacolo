@@ -18,11 +18,11 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include <stdbool.h>
-#include"game.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "game.h"
+#include <stdbool.h>
 
 /* USER CODE END Includes */
 
@@ -48,11 +48,13 @@ SPI_HandleTypeDef hspi1;
 
 TIM_HandleTypeDef htim6;
 
+UART_HandleTypeDef huart2;
+
 PCD_HandleTypeDef hpcd_USB_FS;
 
-volatile bool start_requested = false;
-
 /* USER CODE BEGIN PV */
+Game gioco;
+volatile bool start_requested = false;
 
 /* USER CODE END PV */
 
@@ -63,17 +65,28 @@ static void MX_I2C1_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_USB_PCD_Init(void);
 static void MX_TIM6_Init(void);
+static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void HAL_GPIO_EXTI_Callback(GPIO_Pin){
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	//verifica che l'interruzione sia dal PA9
 	if (GPIO_Pin == GPIO_PIN_9) {
 	        start_requested = true;
 	    }
+}
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
+	if(htim ->Instance == TIM6){
+
+		updateGame(&gioco,0);
+		if (gioco.stato == IN_GIOCO){
+			HAL_TIM_Base_Start_IT(&htim6);
+		}
+	}
 }
 
 /* USER CODE END 0 */
@@ -111,8 +124,10 @@ int main(void)
   MX_SPI1_Init();
   MX_USB_PCD_Init();
   MX_TIM6_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  Game gioco;
+  HAL_TIM_Base_Init(&htim6);
+
 
   /* USER CODE END 2 */
 
@@ -121,12 +136,14 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-	  if (start_requested && gioco.stato != IN_GIOCO) {
-		  	             initGame(&gioco);
-	          }
 
     /* USER CODE BEGIN 3 */
-	  while(gioco.stato != OVER);
+
+  if (start_requested && gioco.stato != IN_GIOCO) {
+						 initGame(&gioco);
+						 HAL_TIM_Base_Start_IT(&htim6);
+						 while(gioco.stato != OVER);
+			  }
   }
   /* USER CODE END 3 */
 }
@@ -170,7 +187,9 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB|RCC_PERIPHCLK_I2C1;
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB|RCC_PERIPHCLK_USART2
+                              |RCC_PERIPHCLK_I2C1;
+  PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
   PeriphClkInit.I2c1ClockSelection = RCC_I2C1CLKSOURCE_HSI;
   PeriphClkInit.USBClockSelection = RCC_USBCLKSOURCE_PLL;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
@@ -285,10 +304,10 @@ static void MX_TIM6_Init(void)
 
   /* USER CODE END TIM6_Init 1 */
   htim6.Instance = TIM6;
-  htim6.Init.Prescaler = 0;
+  htim6.Init.Prescaler = 7199;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim6.Init.Period = 65535;
-  htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  htim6.Init.Period = 99;
+  htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
   {
     Error_Handler();
@@ -302,6 +321,41 @@ static void MX_TIM6_Init(void)
   /* USER CODE BEGIN TIM6_Init 2 */
 
   /* USER CODE END TIM6_Init 2 */
+
+}
+
+/**
+  * @brief USART2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART2_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART2_Init 0 */
+
+  /* USER CODE END USART2_Init 0 */
+
+  /* USER CODE BEGIN USART2_Init 1 */
+
+  /* USER CODE END USART2_Init 1 */
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 115200;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART2_Init 2 */
+
+  /* USER CODE END USART2_Init 2 */
 
 }
 
