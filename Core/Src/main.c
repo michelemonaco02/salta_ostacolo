@@ -1,3 +1,4 @@
+
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
@@ -22,7 +23,9 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "game.h"
+#include "mpu.h"
 #include <stdbool.h>
+
 
 /* USER CODE END Includes */
 
@@ -33,7 +36,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define TRUE 0
+#define FALSE 1
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -54,7 +58,7 @@ PCD_HandleTypeDef hpcd_USB_FS;
 
 /* USER CODE BEGIN PV */
 Game gioco;
-volatile bool start_requested = false;
+volatile int start_requested = FALSE;
 
 /* USER CODE END PV */
 
@@ -73,20 +77,52 @@ static void MX_USART2_UART_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
-	//verifica che l'interruzione sia dal PA9
-	if (GPIO_Pin == GPIO_PIN_9) {
-	        start_requested = true;
+	//verifica che l'interruzione sia dal PA0
+	if (GPIO_Pin == GPIO_PIN_0) {
+			HAL_GPIO_TogglePin(GPIOE,GPIO_PIN_9);
+	        start_requested = TRUE;
 	    }
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	if(htim ->Instance == TIM6){
-
-		updateGame(&gioco,0);
-		if (gioco.stato == IN_GIOCO){
-			HAL_TIM_Base_Start_IT(&htim6);
+		PosVel new_player;
+		new_player = update_player(gioco.y_giocatore,gioco.v_giocatore);
+		updateGame(&gioco,new_player.pos,new_player.vel);
+		updateDisplay(&gioco);
+		if (gioco.stato != IN_GIOCO){
+			HAL_TIM_Base_Stop_IT(&htim6);
 		}
 	}
+}
+
+void test_update_display(){
+    Game game_test;
+    game_test.y_giocatore = LCD_HEIGHT / 2;
+
+    // Alloco un nodo e lo inizializzo
+    Nodo* nodo = malloc(sizeof(Nodo));
+    if (nodo == NULL) {
+        // gestione errore allocazione
+        return;
+    }
+    nodo->ost.coord_x = LCD_WIDTH / 2;
+    nodo->ost.estremita_inf = 10;
+    nodo->ost.estremita_sup = 17;
+    nodo->next = NULL;
+
+    ListaOstacoli lis_test;
+    lis_test.head = nodo;
+
+    game_test.lista_ostacoli = lis_test;
+    game_test.stato = IN_GIOCO;  // ad esempio
+    game_test.v_giocatore = 0.0f;
+    game_test.durata_corrente = 0.0f;
+
+    updateDisplay(&game_test);
+
+    // dopo l'uso libera la memoria allocata
+    free(nodo);
 }
 
 /* USER CODE END 0 */
@@ -125,25 +161,31 @@ int main(void)
   MX_USB_PCD_Init();
   MX_TIM6_Init();
   MX_USART2_UART_Init();
+
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Init(&htim6);
-
-
+  mpu_init();
+  SSD1306_Init();
+  SSD1306_ClearScreen();
+  //test_update_display();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  if (start_requested == TRUE ) {
+		  HAL_GPIO_TogglePin(GPIOE,GPIO_PIN_8);
+		 initGame(&gioco);
+		 updateDisplay(&gioco);
+		 HAL_TIM_Base_Start_IT(&htim6);
+		 while(gioco.stato != OVER);
+		 SSD1306_ClearScreen();
+		 start_requested = FALSE;
+				  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
-  if (start_requested && gioco.stato != IN_GIOCO) {
-						 initGame(&gioco);
-						 HAL_TIM_Base_Start_IT(&htim6);
-						 while(gioco.stato != OVER);
-			  }
   }
   /* USER CODE END 3 */
 }

@@ -16,6 +16,7 @@
 
 void initGame(Game* g){
 	g->y_giocatore = LCD_HEIGHT / 2;
+	g->v_giocatore = 0;
 	//generiamo randomicamente l'altezza
 	int lunghezza = rand_in_range(OBS_MIN_LEN,OBS_MAX_LEN);
 	//generiamo randomicamente l'estremita superiore dell'ostacolo
@@ -27,17 +28,18 @@ void initGame(Game* g){
 
 }
 
-void updateGame(Game* g, int new_y_giocatore) {
+void updateGame(Game* g, int new_y_giocatore,int new_v_giocatore) {
     if (!g || g->stato != IN_GIOCO) return;
 
     // Aggiorna la posizione del giocatore
     g->y_giocatore = new_y_giocatore;
+    g->v_giocatore = new_v_giocatore;
 
     Nodo* head = g->lista_ostacoli.head;
 
     // Controllo se il giocatore muore
     // Se l'ostacolo in testa ha coord_x == 0 e y_giocatore è compreso tra estremita_inf e estremita_sup
-    if (head && head->ost.coord_x == 0) {
+    if (head && head->ost.coord_x == COL_GIOC) {
         if (g->y_giocatore >= head->ost.estremita_inf && g->y_giocatore <= head->ost.estremita_sup) {
             endGame(g);
             return;
@@ -133,5 +135,17 @@ void removeOstacolo(Game* g) {
 }
 
 int check_aggiungi_ostacolo(Game* g){
-	return 0;
+	//se l'ultimo ostacolo ha coord_x < 90, restituisci TRUE, sennà false
+	if (!g || !g->lista_ostacoli.head) return TRUE; // Se non ci sono ostacoli, ne possiamo aggiungere uno
+
+	    Nodo* current = g->lista_ostacoli.head;
+	    while (current->next != NULL) {
+	        current = current->next;
+	    }
+
+	    if (current->ost.coord_x < 90) {
+	        return TRUE;
+	    } else {
+	        return FALSE;
+	    }
 }
