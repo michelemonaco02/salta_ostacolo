@@ -15,8 +15,10 @@ typedef struct {
 } PosVel;
 
 void mpu_init();
-PosVel update_player(int posizione_iniziale, int velocita_iniziale);
+PosVel update_player(int posizione_iniziale, float velocita_iniziale);
 float read_accel_z(void);
+float read_gyro_y(void);
+void power_off_mpu(void);
 
 
 

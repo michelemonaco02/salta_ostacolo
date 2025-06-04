@@ -1,5 +1,6 @@
 #include "stm32f3xx_hal.h"
 #include "game.h"
+#include "display.h"
 #include <string.h> // per memset
 #include <stdlib.h> // per malloc
 
@@ -7,6 +8,7 @@ extern I2C_HandleTypeDef hi2c1;
 
 //prende in ingresso un Game
 //invia al display tramite funzioni hal, la matrice che dobbiamo visualizzare
+/*
 void updateDisplay(Game* g){
 	//SSD1306_ClearScreen();
 	uint8_t buffer[1024];
@@ -47,8 +49,94 @@ void updateDisplay(Game* g){
 
         SSD1306_WriteData(&buffer[page * LCD_WIDTH], LCD_WIDTH);
     }
+}*/
+void updateDisplay(Game* g){
+    if (g->stato != IN_GIOCO) return;
+
+    // Scrive il pixel del giocatore
+    int x_player = 5;
+    int y = g->y_giocatore;
+    if (y >= 0 && y < LCD_HEIGHT) {
+        int page = y / 8;
+        int bit_in_page = y % 8;
+
+        SSD1306_WriteCommand(0xB0 + page);   // Page address
+        SSD1306_WriteCommand(0x00 + (x_player & 0x0F)); // Lower col
+        SSD1306_WriteCommand(0x10 + (x_player >> 4));   // Higher col
+
+        uint8_t pixel = (1 << bit_in_page);
+        SSD1306_WriteData(&pixel, 1);
+    }
+
+    // Scrive ogni ostacolo
+    Nodo* curr = g->lista_ostacoli.head;
+    while (curr != NULL) {
+        int x = curr->ost.coord_x;
+        if (x >= 0 && x < LCD_WIDTH) {
+            uint8_t page_data[8] = {0}; // buffer per ogni pagina
+
+            for (int y = curr->ost.estremita_inf; y < curr->ost.estremita_sup; y++) {
+                int page = y / 8;
+                int bit = y % 8;
+                page_data[page] |= (1 << bit);
+            }
+
+            for (int page = curr->ost.estremita_inf / 8; page <= (curr->ost.estremita_sup - 1) / 8; page++) {
+                SSD1306_WriteCommand(0xB0 + page);
+                SSD1306_WriteCommand(0x00 + (x & 0x0F));
+                SSD1306_WriteCommand(0x10 + (x >> 4));
+
+                SSD1306_WriteData(&page_data[page], 1);
+            }
+        }
+        curr = curr->next;
+    }
 }
 
+
+void cleanDisplay(Game* g){
+	//questa funzione è diversa dalla clearScreen che riscrive ogni pixel
+	//in questa funzione, per ottimizzare, riscriviamo solo i pixel effettivamente bianchi
+
+    // Rimuovi pixel del giocatore
+    int x_player = 5;
+    int y = g->y_giocatore;
+    if (y >= 0 && y < LCD_HEIGHT) {
+        int page = y / 8;
+        int bit = y % 8;
+        SSD1306_WriteCommand(0xB0 + page);   // Page address
+        SSD1306_WriteCommand(0x00 + (x_player & 0x0F)); // Lower col
+        SSD1306_WriteCommand(0x10 + (x_player >> 4));   // Upper col
+
+        uint8_t clear_byte = 0x00;  // spegne tutti i bit
+        SSD1306_WriteData(&clear_byte, 1);
+    }
+
+    // Rimuovi ogni ostacolo
+    Nodo* curr = g->lista_ostacoli.head;
+    while (curr != NULL) {
+        int x = curr->ost.coord_x;
+        if (x >= 0 && x < LCD_WIDTH) {
+            // Per ogni pagina coinvolta, azzera solo i bit dell'ostacolo
+            uint8_t page_data[8] = {0}; // massimo 8 pagine
+            for (int y = curr->ost.estremita_inf; y < curr->ost.estremita_sup; y++) {
+                int page = y / 8;
+                int bit = y % 8;
+                page_data[page] &= ~(1 << bit);  // spegne solo quel bit (inutile qui, ma formale)
+            }
+            // Scrive 0 su ogni pagina toccata
+            for (int page = curr->ost.estremita_inf / 8; page <= (curr->ost.estremita_sup - 1) / 8; page++) {
+                SSD1306_WriteCommand(0xB0 + page);
+                SSD1306_WriteCommand(0x00 + (x & 0x0F));
+                SSD1306_WriteCommand(0x10 + (x >> 4));
+
+                uint8_t zero = 0x00;
+                SSD1306_WriteData(&zero, 1);
+            }
+        }
+        curr = curr->next;
+    }
+}
 
 void SSD1306_WriteCommand(uint8_t cmd) {
     uint8_t data[2];
@@ -126,4 +214,10 @@ void SSD1306_ClearScreen(void) {
         SSD1306_WriteCommand(0x10);        // High col
         SSD1306_WriteData(buffer, 128);    // Write all columns with 0 (black)
     }
+}
+
+
+// Spegne il display (Display OFF)
+void SSD1306_PowerOff(void) {
+    SSD1306_WriteCommand(0xAE);
 }

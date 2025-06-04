@@ -13,6 +13,9 @@
 #define TRUE 0
 #define FALSE 1
 
+static int frameCounter = 0;
+const int framesPerMove = 5;  // più alto, più lento
+
 
 void initGame(Game* g){
 	g->y_giocatore = LCD_HEIGHT / 2;
@@ -35,40 +38,45 @@ void updateGame(Game* g, int new_y_giocatore,int new_v_giocatore) {
     g->y_giocatore = new_y_giocatore;
     g->v_giocatore = new_v_giocatore;
 
-    Nodo* head = g->lista_ostacoli.head;
+    frameCounter++;
+	if(frameCounter == framesPerMove){
+		frameCounter = 0;
+		Nodo* head = g->lista_ostacoli.head;
 
-    // Controllo se il giocatore muore
-    // Se l'ostacolo in testa ha coord_x == 0 e y_giocatore è compreso tra estremita_inf e estremita_sup
-    if (head && head->ost.coord_x == COL_GIOC) {
-        if (g->y_giocatore >= head->ost.estremita_inf && g->y_giocatore <= head->ost.estremita_sup) {
-            endGame(g);
-            return;
-        }
-    }
+		// Controllo se il giocatore muore
+		// Se l'ostacolo in testa ha coord_x == 0 e y_giocatore è compreso tra estremita_inf e estremita_sup
+		if (head && head->ost.coord_x == COL_GIOC) {
+			if (g->y_giocatore >= head->ost.estremita_inf && g->y_giocatore <= head->ost.estremita_sup) {
+				g->stato = OVER;
+				return;
+			}
+		}
 
-    // Se il primo ostacolo è a coord_x == 0 e il giocatore non muore, lo rimuovo
-    if (head && head->ost.coord_x == 0) {
-        removeOstacolo(g);
-        head = g->lista_ostacoli.head;  // aggiorno la testa dopo la rimozione
-    }
+		// Se il primo ostacolo è a coord_x == 0 e il giocatore non muore, lo rimuovo
+		if (head && head->ost.coord_x == 0) {
+			removeOstacolo(g);
+			head = g->lista_ostacoli.head;  // aggiorno la testa dopo la rimozione
+		}
 
-    // Aggiorno la posizione di tutti gli ostacoli spostandoli a sinistra (coord_x - 1)
-    Nodo* current = head;
-    while (current) {
-        current->ost.coord_x -= 1;
-        current = current->next;
-    }
+		// Aggiorno la posizione di tutti gli ostacoli spostandoli a sinistra (coord_x - 1)
+		Nodo* current = head;
+		while (current) {
+			current->ost.coord_x -= 1;
+			current = current->next;
+		}
 
-    // Controllo se devo aggiungere un nuovo ostacolo
-    // (qui chiamiamo la funzione placeholder check_aggiungi_ostacolo che ritorna int)
-    if (check_aggiungi_ostacolo(g) == TRUE) {
-        // genero valori random per il nuovo ostacolo
-        int lunghezza = rand_in_range(OBS_MIN_LEN, OBS_MAX_LEN);
-        int es_sup = rand_in_range(0, LCD_HEIGHT - lunghezza - 1);
-        int es_inf = es_sup + lunghezza;  // attenzione a estremità inf = sup + lunghezza (non sottrazione)
+		// Controllo se devo aggiungere un nuovo ostacolo
+		// (qui chiamiamo la funzione placeholder check_aggiungi_ostacolo che ritorna int)
+		if (check_aggiungi_ostacolo(g) == TRUE) {
+			// genero valori random per il nuovo ostacolo
+			int lunghezza = rand_in_range(OBS_MIN_LEN, OBS_MAX_LEN);
+			int es_sup = rand_in_range(0, LCD_HEIGHT - lunghezza - 1);
+			int es_inf = es_sup + lunghezza;  // attenzione a estremità inf = sup + lunghezza (non sottrazione)
 
-        addOstacolo(g, es_inf, es_sup);  // attenzione all'ordine parametri di addOstacolo (supponendo estremita_sup, estremita_inf)
-    }
+			addOstacolo(g, es_inf, es_sup);  // attenzione all'ordine parametri di addOstacolo (supponendo estremita_sup, estremita_inf)
+		}
+
+	}
 
     // Aggiorno durata corrente
     g->durata_corrente += 1;  // o incrementa in base a un delta time passato o fisso
@@ -78,8 +86,6 @@ void updateGame(Game* g, int new_y_giocatore,int new_v_giocatore) {
 void endGame(Game* g){
 	if (!g) return;
 
-	// Imposta stato game over
-	g->stato = OVER;
 
 	// Libera tutta la lista di ostacoli
 	Nodo* current = g->lista_ostacoli.head;
