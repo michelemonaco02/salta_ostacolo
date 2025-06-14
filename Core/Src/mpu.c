@@ -150,7 +150,7 @@ PosVel update_player(int posizione_iniziale, float velocita_iniziale) {
         snprintf(msg, sizeof(msg),
                  "gyro_y=%.2f, filtered=%.2f, vel=%.2f, pos_f=%.2f, pos=%d\r\n",
                  gyro_y, gyro_filtered, vel_fin, pos_fin_f, stato.pos);
-        HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+        //HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
     }
 
     return stato;

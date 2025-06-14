@@ -14,7 +14,7 @@
 #define FALSE 1
 
 static int frameCounter = 0;
-const int framesPerMove = 5;  // più alto, più lento
+const int framesPerMove = 2;  // più alto, più lento
 
 
 void initGame(Game* g){
@@ -79,14 +79,14 @@ void updateGame(Game* g, int new_y_giocatore,int new_v_giocatore) {
 	}
 
     // Aggiorno durata corrente
-    g->durata_corrente += 1;  // o incrementa in base a un delta time passato o fisso
+    //g->durata_corrente += 15;  // o incrementa in base a un delta time passato o fisso
 }
 
 
 void endGame(Game* g){
 	if (!g) return;
 
-
+	//g->durata_corrente += 15;
 	// Libera tutta la lista di ostacoli
 	Nodo* current = g->lista_ostacoli.head;
 	while (current) {

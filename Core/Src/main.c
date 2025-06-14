@@ -24,10 +24,9 @@
 #include "game.h"
 #include "mpu.h"
 #include "display.h"
+#include "serial_transmission.h"
 #include <stdbool.h>
 #include <stdlib.h>
-#include <stdio.h>    // per sprintf
-#include <string.h>  // per strlen()
 
 /* USER CODE END Includes */
 
@@ -51,6 +50,7 @@ I2C_HandleTypeDef hi2c1;
 SPI_HandleTypeDef hspi1;
 
 TIM_HandleTypeDef htim6;
+TIM_HandleTypeDef htim7;
 
 UART_HandleTypeDef huart2;
 
@@ -60,7 +60,6 @@ PCD_HandleTypeDef hpcd_USB_FS;
 Game gioco;
 volatile int start_requested = FALSE;
 volatile bool update_flag = FALSE;
-int timer6_counter = 0;  // Contatore globale
 
 /* USER CODE END PV */
 
@@ -72,6 +71,7 @@ static void MX_SPI1_Init(void);
 static void MX_USB_PCD_Init(void);
 static void MX_TIM6_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_TIM7_Init(void);
 /* USER CODE BEGIN PFP */
 /* USER CODE END PFP */
 
@@ -163,6 +163,7 @@ int main(void)
   MX_USB_PCD_Init();
   MX_TIM6_Init();
   MX_USART2_UART_Init();
+  MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
 	HAL_TIM_Base_Init(&htim6);
 	mpu_init();
@@ -178,59 +179,41 @@ int main(void)
 			case IN_GIOCO:
 				if (update_flag == TRUE) {
 					update_flag = FALSE;
-
-					timer6_counter++;
 					PosVel new_player = update_player(gioco.y_giocatore, gioco.v_giocatore);
 					cleanDisplay(&gioco);
 					updateGame(&gioco, new_player.pos, new_player.vel);
 					updateDisplay(&gioco);
-/*
-					if (gioco.stato != IN_GIOCO) {
-						HAL_TIM_Base_Stop_IT(&htim6);
-						SSD1306_ClearScreen();
-					}*/
 				break;
 			case OVER:
+				uint16_t count = __HAL_TIM_GET_COUNTER(&htim7);
+				gioco.durata_corrente = (float)count;
+				send_msg( "Per iniziare una nuova partita, premi user button \r\n");
 				endGame(&gioco);
+				HAL_TIM_Base_Stop_IT(&htim6);
+				SSD1306_ClearScreen();
 				while(start_requested == FALSE);
+				send_msg( "Inizio gioco...\r\n");
 				HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_8);
 				initGame(&gioco);
 				updateDisplay(&gioco);
 				HAL_TIM_Base_Start_IT(&htim6);
+				HAL_TIM_Base_Start_IT(&htim7);
 				start_requested = FALSE;
 
 				break;
 			case INATTIVO:
+				send_msg("Premi user button per giocare...\r\n");
 				while(start_requested == FALSE);
+				send_msg("Inizio gioco... \r\n");
 				HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_8);
 				initGame(&gioco);
 				updateDisplay(&gioco);
 				HAL_TIM_Base_Start_IT(&htim6);
+				HAL_TIM_Base_Start_IT(&htim7);
 				start_requested = FALSE;
 				break;
 
     	}
-    		/*
-        if (start_requested == TRUE) {
-            HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_8);
-            initGame(&gioco);
-            updateDisplay(&gioco);
-            HAL_TIM_Base_Start_IT(&htim6);
-            start_requested = FALSE;
-        }
-
-        if (update_flag == TRUE) {
-            update_flag = FALSE;
-
-            PosVel new_player = update_player(gioco.y_giocatore, gioco.v_giocatore);
-            cleanDisplay(&gioco);
-            updateGame(&gioco, new_player.pos, new_player.vel);
-            updateDisplay(&gioco);
-
-            if (gioco.stato != IN_GIOCO) {
-                HAL_TIM_Base_Stop_IT(&htim6);
-                SSD1306_ClearScreen();
-            }*/
         }
     }
     /* USER CODE END WHILE */
@@ -413,6 +396,44 @@ static void MX_TIM6_Init(void)
   /* USER CODE BEGIN TIM6_Init 2 */
 
   /* USER CODE END TIM6_Init 2 */
+
+}
+
+/**
+  * @brief TIM7 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM7_Init(void)
+{
+
+  /* USER CODE BEGIN TIM7_Init 0 */
+
+  /* USER CODE END TIM7_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM7_Init 1 */
+
+  /* USER CODE END TIM7_Init 1 */
+  htim7.Instance = TIM7;
+  htim7.Init.Prescaler = 4799;
+  htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim7.Init.Period = 999;
+  htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim7) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim7, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM7_Init 2 */
+
+  /* USER CODE END TIM7_Init 2 */
 
 }
 
